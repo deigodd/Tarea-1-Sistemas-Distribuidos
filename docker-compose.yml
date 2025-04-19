@@ -1,0 +1,30 @@
+version: "3.8"
+
+services:
+  mongo:
+    build: ./bdd
+    container_name: mongo_waze
+    ports:
+      - "27017:27017"
+    volumes:
+      - ./map-scraper:/data/map-scraper
+      - mongo_data:/data/db
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=admin123
+
+  mongo-express:
+    image: mongo-express
+    container_name: mongo_express_waze
+    restart: always
+    ports:
+      - "8081:8081"
+    environment:
+      - ME_CONFIG_MONGODB_ADMINUSERNAME=admin
+      - ME_CONFIG_MONGODB_ADMINPASSWORD=admin123
+      - ME_CONFIG_MONGODB_SERVER=mongo
+    depends_on:
+      - mongo
+
+volumes:
+  mongo_data:
