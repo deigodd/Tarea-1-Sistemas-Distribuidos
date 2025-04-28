@@ -47,6 +47,8 @@ services:
     image: redislabs/redisinsight:latest
     restart: always
     container_name: redisinsight_waze
+    environment:
+      - REDIS_EXTRA_FLAGS=--maxmemory 100mb --maxmemory-policy allkeys-lru
     volumes:
       - redis-insight:/data
     ports:
@@ -56,13 +58,18 @@ services:
     depends_on:
       - redis
 
+  request:
+    build: ./request
+    container_name: request_waze
+    depends_on:
+      - mongo
+      - redis
+    networks:
+      - redisn
+    restart: always
+
 volumes:
   mongo_data:
   redis_data_1:
     driver: local
   redis-insight:
-
-
-
-  
-
