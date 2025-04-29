@@ -9,10 +9,11 @@ if not os.path.exists('request'):
     os.makedirs('request')
 
 # Configuración de logs
+# Configuración de logs
 logging.basicConfig(
-    filename='request/request_wazer_logs.txt', 
-    level=logging.INFO,  
-    format='%(asctime)s - %(message)s'  
+    filename='request/request_wazer_logs.txt',
+    level=logging.INFO,
+    format='%(asctime)s - %(message)s'
 )
 
 TYPES = ['HAZARD', 'ROAD_CLOSED', 'POLICE']

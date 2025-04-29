@@ -46,6 +46,7 @@ services:
       - redisn
     depends_on:
       - mongo
+      - map-scraper # Asegura que MongoDB esté listo antes de iniciar Mongo Express
 
   # Servicio para Redis
   redis:
@@ -69,6 +70,8 @@ services:
     image: redislabs/redisinsight:latest
     restart: always
     container_name: redisinsight_waze
+    environment:
+      - REDIS_EXTRA_FLAGS=--maxmemory 100mb --maxmemory-policy allkeys-lru
     volumes:
       - redis-insight:/data
     ports:
