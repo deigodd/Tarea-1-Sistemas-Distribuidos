@@ -7,31 +7,29 @@ networks:
 services:
   # Servicio para el scraper
   map-scraper:
-    build: ./map-scraper  # El contexto de la construcción para el scraper
+    build: ./map-scraper # El contexto de la construcción para el scraper
     container_name: map_scraper_waze
     restart: always
-    ports:
-      - "5000:5000"
     networks:
       - redisn
     volumes:
-      - ./map-scraper:/app  # Asegura que se sincronice el código con el contenedor
+      - ./map-scraper:/app # Asegura que se sincronice el código con el contenedor
 
   # Servicio para MongoDB
   mongo:
-    build: ./bdd  # El contexto de la construcción para MongoDB
+    build: ./bdd # El contexto de la construcción para MongoDB
     container_name: mongo_waze
     ports:
       - "27017:27017"
     volumes:
-      - mongo_data:/data/db  # Volumen para persistencia de datos
+      - mongo_data:/data/db # Volumen para persistencia de datos
     environment:
       - MONGO_INITDB_ROOT_USERNAME=admin
       - MONGO_INITDB_ROOT_PASSWORD=admin123
     networks:
       - redisn
     depends_on:
-      - map-scraper  # Asegura que el scraper esté listo antes de iniciar MongoDB
+      - map-scraper # Asegura que el scraper esté listo antes de iniciar MongoDB
 
   # Servicio para Mongo Express
   mongo-express:
@@ -56,10 +54,11 @@ services:
     container_name: redis_waze
     environment:
       - ALLOW_EMPTY_PASSWORD=yes
+      - REDIS_EXTRA_FLAGS=--maxmemory 100mb --maxmemory-policy allkeys-lru
     ports:
       - "6379:6379"
     volumes:
-      - redis_data_1:/bitnami/redis/data  # Volumen para persistencia de Redis
+      - redis_data_1:/bitnami/redis/data # Volumen para persistencia de Redis
     networks:
       - redisn
     depends_on:
@@ -70,8 +69,6 @@ services:
     image: redislabs/redisinsight:latest
     restart: always
     container_name: redisinsight_waze
-    environment:
-      - REDIS_EXTRA_FLAGS=--maxmemory 100mb --maxmemory-policy allkeys-lru
     volumes:
       - redis-insight:/data
     ports:
@@ -92,8 +89,20 @@ services:
       - redisn
     restart: always
 
+  # Servicio para el cache (Flask)
+  redis-cache:
+    build: ./redis-cache # El contexto de la construcción para redis-cache (flask)
+    container_name: redis_cache_waze
+    restart: always
+    ports:
+      - "5000:5000"
+    networks:
+      - redisn
+    volumes:
+      - ./redis-cache:/app # Asegura que el código se sincronice con el contenedor
+
 volumes:
-  mongo_data:  # Volumen persistente para MongoDB
-  redis_data_1:  # Volumen persistente para Redis
+  mongo_data: # Volumen persistente para MongoDB
+  redis_data_1: # Volumen persistente para Redis
     driver: local
-  redis-insight:  # Volumen para RedisInsight
+  redis-insight: # Volumen para RedisInsight

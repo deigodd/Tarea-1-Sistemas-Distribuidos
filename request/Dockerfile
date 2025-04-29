@@ -4,6 +4,6 @@ WORKDIR /usr/src/app
 
 COPY generator.py .
 
-RUN pip install redis
+RUN pip install requests
 
 CMD ["python", "generator.py"]
