@@ -5,18 +5,35 @@ networks:
     driver: bridge
 
 services:
+  # Servicio para el scraper
+  map-scraper:
+    build: ./map-scraper  # El contexto de la construcción para el scraper
+    container_name: map_scraper_waze
+    restart: always
+    ports:
+      - "5000:5000"
+    networks:
+      - redisn
+    volumes:
+      - ./map-scraper:/app  # Asegura que se sincronice el código con el contenedor
+
+  # Servicio para MongoDB
   mongo:
-    build: ./bdd
+    build: ./bdd  # El contexto de la construcción para MongoDB
     container_name: mongo_waze
     ports:
       - "27017:27017"
     volumes:
-      - ./map-scraper:/data/map-scraper
-      - mongo_data:/data/db
+      - mongo_data:/data/db  # Volumen para persistencia de datos
     environment:
       - MONGO_INITDB_ROOT_USERNAME=admin
       - MONGO_INITDB_ROOT_PASSWORD=admin123
+    networks:
+      - redisn
+    depends_on:
+      - map-scraper  # Asegura que el scraper esté listo antes de iniciar MongoDB
 
+  # Servicio para Mongo Express
   mongo-express:
     image: mongo-express
     container_name: mongo_express_waze
@@ -27,9 +44,12 @@ services:
       - ME_CONFIG_MONGODB_ADMINUSERNAME=admin
       - ME_CONFIG_MONGODB_ADMINPASSWORD=admin123
       - ME_CONFIG_MONGODB_SERVER=mongo
+    networks:
+      - redisn
     depends_on:
       - mongo
 
+  # Servicio para Redis
   redis:
     image: bitnami/redis:latest
     restart: always
@@ -39,10 +59,13 @@ services:
     ports:
       - "6379:6379"
     volumes:
-      - redis_data_1:/bitnami/redis/data
+      - redis_data_1:/bitnami/redis/data  # Volumen para persistencia de Redis
     networks:
       - redisn
+    depends_on:
+      - map-scraper
 
+  # Servicio para RedisInsight
   redisinsight:
     image: redislabs/redisinsight:latest
     restart: always
@@ -58,6 +81,7 @@ services:
     depends_on:
       - redis
 
+  # Servicio para el request handler
   request:
     build: ./request
     container_name: request_waze
@@ -69,7 +93,7 @@ services:
     restart: always
 
 volumes:
-  mongo_data:
-  redis_data_1:
+  mongo_data:  # Volumen persistente para MongoDB
+  redis_data_1:  # Volumen persistente para Redis
     driver: local
-  redis-insight:
+  redis-insight:  # Volumen para RedisInsight
