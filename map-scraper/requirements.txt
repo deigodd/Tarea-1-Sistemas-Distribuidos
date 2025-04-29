@@ -1,3 +1,4 @@
+selenium
 selenium-wire
 pyautogui
-selenium
+blinker==1.4

@@ -1,16 +1,20 @@
 import random
 import time
 import json
+import os
 from seleniumwire import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
-import pyautogui
+
+# Detectar si se puede usar pyautogui (entorno gráfico)
+USE_PYAUTOGUI = os.environ.get("DISPLAY") is not None
+if USE_PYAUTOGUI:
+    import pyautogui
 
 # Configuración
 URL = "https://www.waze.com/es-419/live-map/"
 CHROMEDRIVER_PATH = "/usr/bin/chromedriver"
-BODY_CHAR_LIMIT = 5000
 PIXELS_PER_MOVE = 300
 MAX_ALERTAS = 10000
 
@@ -41,7 +45,11 @@ def analizar_red(driver, alertas):
 
 def main():
     options = Options()
+    options.add_argument("--headless")
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--start-maximized")
+
     service = Service(CHROMEDRIVER_PATH)
     driver = webdriver.Chrome(service=service, options=options)
 
@@ -55,13 +63,16 @@ def main():
         pass
 
     time.sleep(2)
-    screenWidth, screenHeight = pyautogui.size()
-    center_x = screenWidth // 2
-    center_y = screenHeight // 2
-    pyautogui.click(center_x, center_y)
+    if USE_PYAUTOGUI:
+        screenWidth, screenHeight = pyautogui.size()
+        center_x = screenWidth // 2
+        center_y = screenHeight // 2
+        pyautogui.click(center_x, center_y)
+    else:
+        center_x = center_y = 500  # Valores ficticios
+
     time.sleep(1)
 
-    # 🔍 Hacer zoom antes de moverse
     try:
         print("🔍 Haciendo zoom al mapa...")
         zoom_in_button = driver.find_element(By.CLASS_NAME, "leaflet-control-zoom-in")
@@ -72,7 +83,6 @@ def main():
         print(f"⚠️ Error al hacer zoom: {e}")
 
     alertas = []
-
     print("🔄 Iniciando movimientos aleatorios del mapa...")
 
     while len(alertas) < MAX_ALERTAS:
@@ -80,12 +90,16 @@ def main():
         dx, dy = DIRECCIONES[direccion]
 
         try:
-            print(f"🧭 Moviendo hacia: {direccion}")
-            pyautogui.moveTo(center_x, center_y)
-            pyautogui.mouseDown()
-            pyautogui.moveRel(dx, dy, duration=0.5)
-            pyautogui.mouseUp()
-            time.sleep(3)
+            if USE_PYAUTOGUI:
+                print(f"🧭 Moviendo hacia: {direccion}")
+                pyautogui.moveTo(center_x, center_y)
+                pyautogui.mouseDown()
+                pyautogui.moveRel(dx, dy, duration=0.5)
+                pyautogui.mouseUp()
+                time.sleep(3)
+            else:
+                print(f"🧭 (Simulado) Movimiento hacia: {direccion}")
+                time.sleep(1)
 
             if analizar_red(driver, alertas):
                 break

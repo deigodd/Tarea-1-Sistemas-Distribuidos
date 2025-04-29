@@ -1,53 +1,38 @@
-FROM python:3.9-buster
+FROM python:3.9-slim
 
-# Instalar dependencias necesarias para Chrome
+# Instalación de dependencias del sistema
 RUN apt-get update && apt-get install -y \
-    wget \
-    curl \
-    unzip \
-    xdg-utils \
-    libx11-dev \
-    libxkbfile-dev \
-    libsecret-1-0 \
-    libnss3 \
-    libgdk-pixbuf2.0-0 \
+    chromium-driver \
+    chromium \
+    fonts-liberation \
     libasound2 \
-    libxtst6 \
-    python3-dev \
     libatk-bridge2.0-0 \
     libatk1.0-0 \
-    libatspi2.0-0 \
+    libc6 \
     libcairo2 \
     libcups2 \
-    libgtk-3-0 \
-    libpango-1.0-0 \
-    libvulkan1 \
+    libdbus-1-3 \
+    libgdk-pixbuf2.0-0 \
+    libnspr4 \
+    libnss3 \
+    libx11-xcb1 \
+    libxcomposite1 \
     libxdamage1 \
-    libxkbcommon0 \
-    fonts-liberation \
-    libgbm1 \
+    libxrandr2 \
+    xdg-utils \
     && rm -rf /var/lib/apt/lists/*
 
-# Descargar e instalar Chrome
-RUN wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb && \
-    apt install -y ./google-chrome-stable_current_amd64.deb && \
-    rm google-chrome-stable_current_amd64.deb
+# Variables de entorno necesarias para headless
+ENV CHROME_BIN="/usr/bin/chromium"
+ENV CHROMEDRIVER_PATH="/usr/bin/chromedriver"
 
-# Instalar las dependencias de Python necesarias
+# Copiar archivos
+WORKDIR /app
 COPY requirements.txt .
+COPY scraper.py .
+
+# Instalar dependencias de Python
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Configurar el directorio de trabajo dentro del contenedor
-WORKDIR /app
-
-# Copiar los archivos del script al contenedor
-COPY . /app
-
-# Descargar e instalar ChromeDriver (el mismo que es compatible con tu versión de Chrome)
-RUN wget https://chromedriver.storage.googleapis.com/113.0.5672.63/chromedriver_linux64.zip && \
-    unzip chromedriver_linux64.zip && \
-    mv chromedriver /usr/bin/chromedriver && \
-    rm chromedriver_linux64.zip
-
-# Comando por defecto para ejecutar el script
+# Ejecutar el scraper
 CMD ["python", "scraper.py"]
