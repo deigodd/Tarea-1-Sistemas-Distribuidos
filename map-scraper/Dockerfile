@@ -28,7 +28,7 @@ ENV CHROMEDRIVER_PATH="/usr/bin/chromedriver"
 
 # Copiar archivos
 WORKDIR /app
-COPY requirements.txt .
+COPY requirements.txt .   
 COPY scraper.py .
 
 # Instalar dependencias de Python

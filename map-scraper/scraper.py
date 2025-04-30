@@ -6,6 +6,7 @@ from seleniumwire import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
+from pymongo import MongoClient
 
 # Detectar si se puede usar pyautogui (entorno gráfico)
 USE_PYAUTOGUI = os.environ.get("DISPLAY") is not None
@@ -110,14 +111,17 @@ def main():
 
     if alertas:
         try:
-            with open("alertas.json", "x", encoding="utf-8") as f:
-                json.dump(alertas, f, ensure_ascii=False, indent=2)
-            print(f"\n✅ Se guardaron {len(alertas)} alertas en 'alertas.json'")
-        except FileExistsError:
-            print("⚠️ El archivo 'alertas.json' ya existe. No se sobrescribió.")
+            print("💾 Conectando a MongoDB...")
+            client = MongoClient("mongodb://admin:admin123@mongo:27017/")
+            db = client["waze_db"]
+            collection = db["alertas"]
+
+            result = collection.insert_many(alertas)
+            print(f"\n✅ Se insertaron {len(result.inserted_ids)} alertas en MongoDB.")
+        except Exception as e:
+            print(f"❌ Error al guardar en MongoDB: {e}")
     else:
         print("⚠️ No se encontraron alertas para guardar.")
-
 
     print("✅ Navegación finalizada.")
 
