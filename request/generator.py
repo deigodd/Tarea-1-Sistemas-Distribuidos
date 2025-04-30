@@ -9,18 +9,11 @@ if not os.path.exists('request'):
     os.makedirs('request')
 
 # Configuración de logs
-# Configuración de logs
 logging.basicConfig(
     filename='request/request_wazer_logs.txt',
     level=logging.INFO,
     format='%(asctime)s - %(message)s'
 )
-
-TYPES = ['HAZARD', 'ROAD_CLOSED', 'POLICE']
-CITIES = [
-    'Santiago', 'Maipú', 'Providencia', 'Estación Central', 'Quinta Normal',
-    'Cerro Navia', 'Recoleta', 'Pudahuel', 'Peñalolén', 'Ñuñoa'
-]
 
 hit_count = 0
 miss_count = 0
@@ -28,18 +21,36 @@ total_requests = 0
 
 # Dirección del backend Flask (servicio 'cache' en docker-compose)
 BACKEND_URL = "http://redis-cache:5000/alerts"
+ALL_IDS_URL = "http://redis-cache:5000/alerts/ids"  # Asegúrate de tener este endpoint
+
+def fetch_random_ids(sample_size=100):
+    try:
+        response = requests.get(ALL_IDS_URL)
+        if response.status_code == 200:
+            all_ids = response.json().get("ids", [])
+            return random.sample(all_ids, sample_size)  # Selecciona 100 ids aleatorios
+        else:
+            logging.error(f"❌ Error fetching IDs: {response.status_code}")
+            return []
+    except Exception as e:
+        logging.error(f"💥 Exception fetching IDs: {e}")
+        return []
 
 def main():
     global hit_count, miss_count, total_requests
 
+    # Paso 1: obtener 100 IDs aleatorios
+    selected_ids = fetch_random_ids(100)
+    if not selected_ids:
+        print("No se pudieron obtener los IDs.")
+        return
+    print (f"IDs seleccionados: {selected_ids}")
     start_time = time.time()
     duration = 60  # segundos
 
     while time.time() - start_time < duration:
-        alert_type = random.choice(TYPES)
-        city = random.choice(CITIES)
-
-        params = {"type": alert_type, "city": city}
+        _id = random.choice(selected_ids)
+        params = {"id": _id}  # Asegúrate de que el backend acepte 'id' como parámetro
 
         try:
             response = requests.get(BACKEND_URL, params=params)
@@ -51,10 +62,10 @@ def main():
 
                 if source == "cache":
                     hit_count += 1
-                    log = f"[CACHE HIT] {alert_type} in {city} at {current_time}"
+                    log = f"[CACHE HIT] id={_id} at {current_time}"
                 else:
                     miss_count += 1
-                    log = f"[CACHE MISS] {alert_type} in {city} at {current_time}"
+                    log = f"[CACHE MISS] id={_id} at {current_time}"
 
                 print(log)
                 logging.info(log)
@@ -66,7 +77,7 @@ def main():
                     print(stats)
                     logging.info(stats)
             else:
-                logging.warning(f"❌ Error {response.status_code} for {alert_type} in {city}")
+                logging.warning(f"❌ Error {response.status_code} for id={_id}")
         except Exception as e:
             logging.error(f"💥 Exception during request: {e}")
 
