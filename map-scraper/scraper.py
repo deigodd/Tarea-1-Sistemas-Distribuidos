@@ -109,11 +109,15 @@ def main():
     driver.quit()
 
     if alertas:
-        with open("alertas.json", "w", encoding="utf-8") as f:
-            json.dump(alertas, f, ensure_ascii=False, indent=2)
-        print(f"\n✅ Se guardaron {len(alertas)} alertas en 'alertas.json'")
+        try:
+            with open("alertas.json", "x", encoding="utf-8") as f:
+                json.dump(alertas, f, ensure_ascii=False, indent=2)
+            print(f"\n✅ Se guardaron {len(alertas)} alertas en 'alertas.json'")
+        except FileExistsError:
+            print("⚠️ El archivo 'alertas.json' ya existe. No se sobrescribió.")
     else:
         print("⚠️ No se encontraron alertas para guardar.")
+
 
     print("✅ Navegación finalizada.")
 
