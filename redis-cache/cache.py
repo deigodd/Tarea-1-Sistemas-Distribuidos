@@ -36,7 +36,7 @@ def get_alerts():
         try:
             result = collection.find_one({"_id": ObjectId(alert_id)}, {"_id": 0})
             if result:
-                redis_client.set(key, json.dumps(result))
+                redis_client.setex(key, 40, json.dumps(result))
                 return jsonify({"source": "mongo", "data": result})
             else:
                 return jsonify({"error": "No se encontró el ID"}), 404
