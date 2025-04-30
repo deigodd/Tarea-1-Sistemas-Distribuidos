@@ -41,6 +41,7 @@ def get_alerts():
             else:
                 return jsonify({"error": "No se encontró el ID"}), 404
         except Exception as e:
+            print(f"Error al buscar en MongoDB: {e}")
             return jsonify({"error": str(e)}), 500
 
     return jsonify({"error": "Debe proporcionar 'id'"}), 400
