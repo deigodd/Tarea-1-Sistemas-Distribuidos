@@ -44,7 +44,7 @@ def get_alerts():
 
     if result:
         # Serializar el resultado de Mongo a JSON y guardarlo en Redis
-        redis_client.setex(key, 120, json.dumps(result))  # TTL de 120 segundos
+        redis_client.set(key, json.dumps(result))  # TTL de 120 segundos
         return jsonify({"source": "mongo", "data": result})
     else:
         return jsonify({"error": "No se encontraron datos"}), 404

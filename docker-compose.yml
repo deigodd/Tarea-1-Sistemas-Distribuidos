@@ -22,7 +22,7 @@ services:
     ports:
       - "27017:27017"
     volumes:
-      - mongo_data:/data/db # Volumen para persistencia de datos
+      - ./map-scraper/alertas.json:/data/map-scraper/alertas.json:ro
     environment:
       - MONGO_INITDB_ROOT_USERNAME=admin
       - MONGO_INITDB_ROOT_PASSWORD=admin123
@@ -55,7 +55,7 @@ services:
     container_name: redis_waze
     environment:
       - ALLOW_EMPTY_PASSWORD=yes
-      - REDIS_EXTRA_FLAGS=--maxmemory 100mb --maxmemory-policy allkeys-lru
+      - REDIS_EXTRA_FLAGS=--maxmemory 10mb --maxmemory-policy allkeys-lru # Configuración de Redis para limitar el uso de memoria
     ports:
       - "6379:6379"
     volumes:
@@ -70,8 +70,6 @@ services:
     image: redislabs/redisinsight:latest
     restart: always
     container_name: redisinsight_waze
-    environment:
-      - REDIS_EXTRA_FLAGS=--maxmemory 100mb --maxmemory-policy allkeys-lru
     volumes:
       - redis-insight:/data
     ports:
