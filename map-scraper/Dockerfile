@@ -36,3 +36,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Ejecutar el scraper
 CMD ["python", "scraper.py"]
+

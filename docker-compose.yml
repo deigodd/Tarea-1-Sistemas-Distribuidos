@@ -9,7 +9,6 @@ services:
   map-scraper:
     build: ./map-scraper # El contexto de la construcción para el scraper
     container_name: map_scraper_waze
-    restart: always
     networks:
       - redisn
     volumes:
@@ -30,6 +29,7 @@ services:
       - redisn
     depends_on:
       - map-scraper # Asegura que el scraper esté listo antes de iniciar MongoDB
+    command: ["mongod", "--quiet"]
 
   # Servicio para Mongo Express
   mongo-express:
@@ -63,6 +63,7 @@ services:
     networks:
       - redisn
     depends_on:
+      - mongo # Asegura que MongoDB esté listo antes de iniciar Redis
       - map-scraper
 
   # Servicio para RedisInsight
@@ -84,6 +85,7 @@ services:
     build: ./request
     container_name: request_waze
     depends_on:
+      - map-scraper
       - mongo
       - redis
     networks:
@@ -101,6 +103,10 @@ services:
       - redisn
     volumes:
       - ./redis-cache:/app # Asegura que el código se sincronice con el contenedor
+    depends_on:
+      - redis # Asegura que Redis esté listo antes de iniciar el cache
+      - mongo # Asegura que MongoDB esté listo antes de iniciar el cache
+      - map-scraper # Asegura que el scraper esté listo antes de iniciar el cache
 
 volumes:
   mongo_data: # Volumen persistente para MongoDB

@@ -20,7 +20,7 @@ except Exception as e:
     print(f"Error al conectar con MongoDB: {e}")
     raise
 
-db = mongo_client['waze_alertas']
+db = mongo_client['waze_db']
 collection = db['alertas']
 
 @app.route('/alerts', methods=['GET'])
