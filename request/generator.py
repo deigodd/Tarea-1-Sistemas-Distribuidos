@@ -26,6 +26,9 @@ id_access_count = defaultdict(int)
 BACKEND_URL = "http://redis-cache:5000/alerts"
 ALL_IDS_URL = "http://redis-cache:5000/alerts/ids"
 
+# Condicional para cambiar la distribución
+CONDITIONAL_DISTRIBUTION = 1
+
 def fetch_random_ids(sample_size=100):
     try:
         response = requests.get(ALL_IDS_URL)
@@ -64,45 +67,85 @@ def main():
     # Bucle indefinido con generación de nuevos planes
     while True:
         requests_plan = generate_requests_plan(selected_ids, min_repeats=1, max_repeats=3, target_length=60)
-
+        if CONDITIONAL_DISTRIBUTION == 1:
         # Generar el tiempo de espera usando distribución uniforme
-        for _id in requests_plan:
-            id_access_count[_id] += 1
-            total_requests += 1
+            for _id in requests_plan:
+                id_access_count[_id] += 1
+                total_requests += 1
 
-            params = {"id": _id}
+                params = {"id": _id}
 
-            try:
-                response = requests.get(BACKEND_URL, params=params)
-                if response.status_code == 200:
-                    result = response.json()
-                    source = result.get("source", "unknown")
-                    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                try:
+                    response = requests.get(BACKEND_URL, params=params)
+                    if response.status_code == 200:
+                        result = response.json()
+                        source = result.get("source", "unknown")
+                        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-                    if source == "cache":
-                        hit_count += 1
-                        log = f"[CACHE HIT] id={_id} at {current_time}"
+                        if source == "cache":
+                            hit_count += 1
+                            log = f"[CACHE HIT] id={_id} at {current_time}"
+                        else:
+                            miss_count += 1
+                            log = f"[CACHE MISS] id={_id} at {current_time}"
+
+                        print(log)
+                        logging.info(log)
+
+                        if total_requests % 10 == 0:
+                            hit_rate = (hit_count / total_requests) * 100
+                            miss_rate = (miss_count / total_requests) * 100
+                            stats = f"Total Requests: {total_requests} | Hits: {hit_count} | Misses: {miss_count} | Hit Rate: {hit_rate:.2f}% | Miss Rate: {miss_rate:.2f}%"
+                            print(stats)
+                            logging.info(stats)
                     else:
-                        miss_count += 1
-                        log = f"[CACHE MISS] id={_id} at {current_time}"
+                        logging.warning(f"❌ Error {response.status_code} for id={_id}")
+                except Exception as e:
+                    logging.error(f"💥 Exception during request: {e}")
 
-                    print(log)
-                    logging.info(log)
+                # Tiempo de espera usando distribución uniforme entre 0.1 y 1 segundo
+                wait_time = random.uniform(0.1, 1)  # Genera un tiempo de espera entre 0.1 y 1 segundo
+                time.sleep(wait_time)  # Sleep en segundos
+        else:
+            # Generar el tiempo de espera usando distribución exponencial (media = 0.5s)
+            for _id in requests_plan:
+                id_access_count[_id] += 1
+                total_requests += 1
 
-                    if total_requests % 10 == 0:
-                        hit_rate = (hit_count / total_requests) * 100
-                        miss_rate = (miss_count / total_requests) * 100
-                        stats = f"Total Requests: {total_requests} | Hits: {hit_count} | Misses: {miss_count} | Hit Rate: {hit_rate:.2f}% | Miss Rate: {miss_rate:.2f}%"
-                        print(stats)
-                        logging.info(stats)
-                else:
-                    logging.warning(f"❌ Error {response.status_code} for id={_id}")
-            except Exception as e:
-                logging.error(f"💥 Exception during request: {e}")
+                params = {"id": _id}
 
-            # Tiempo de espera usando distribución uniforme entre 0.1 y 1 segundo
-            wait_time = random.uniform(0.1, 1)  # Genera un tiempo de espera entre 0.1 y 1 segundo
-            time.sleep(wait_time)  # Sleep en segundos
+                try:
+                    response = requests.get(BACKEND_URL, params=params)
+                    if response.status_code == 200:
+                        result = response.json()
+                        source = result.get("source", "unknown")
+                        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+                        if source == "cache":
+                            hit_count += 1
+                            log = f"[CACHE HIT] id={_id} at {current_time}"
+                        else:
+                            miss_count += 1
+                            log = f"[CACHE MISS] id={_id} at {current_time}"
+
+                        print(log)
+                        logging.info(log)
+
+                        if total_requests % 10 == 0:
+                            hit_rate = (hit_count / total_requests) * 100
+                            miss_rate = (miss_count / total_requests) * 100
+                            stats = f"Total Requests: {total_requests} | Hits: {hit_count} | Misses: {miss_count} | Hit Rate: {hit_rate:.2f}% | Miss Rate: {miss_rate:.2f}%"
+                            print(stats)
+                            logging.info(stats)
+                    else:
+                        logging.warning(f"❌ Error {response.status_code} for id={_id}")
+                except Exception as e:
+                    logging.error(f"💥 Exception during request: {e}")
+
+                # Tiempo de espera usando distribución exponencial (media = 0.5s)
+                wait_time = np.random.exponential(scale=0.5)
+                time.sleep(wait_time)
+
 
         # Al finalizar el plan, mostrar resumen y continuar
         print("\n🔄 Generando nuevo ciclo de peticiones...\n")
