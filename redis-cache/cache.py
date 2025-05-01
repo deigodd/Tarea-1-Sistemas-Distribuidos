@@ -10,11 +10,13 @@ app = Flask(__name__)
 # Redis config
 redis_client = redis.Redis(host='redis', port=6379, decode_responses=True)
 
+large_text = "x" * 50_000
+
+
 # Mongo config
 try:
     mongo_client = MongoClient('mongodb://admin:admin123@mongo:27017/')
-    # Verificar la conexión a la base de datos
-    mongo_client.admin.command('ping')  # Esto verifica si MongoDB está accesible
+    mongo_client.admin.command('ping')
     print("Conexión a MongoDB exitosa.")
 except Exception as e:
     print(f"Error al conectar con MongoDB: {e}")
@@ -36,7 +38,8 @@ def get_alerts():
         try:
             result = collection.find_one({"_id": ObjectId(alert_id)}, {"_id": 0})
             if result:
-                redis_client.setex(key, 40, json.dumps(result))
+                result["extra_payload"] = large_text
+                redis_client.set(key, json.dumps(result))
                 return jsonify({"source": "mongo", "data": result})
             else:
                 return jsonify({"error": "No se encontró el ID"}), 404

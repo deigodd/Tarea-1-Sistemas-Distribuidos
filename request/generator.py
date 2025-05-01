@@ -5,7 +5,8 @@ import os
 import requests
 from datetime import datetime
 from collections import defaultdict
-import numpy as np  # Asegúrate de tener numpy instalado: pip install numpy
+import numpy as np
+import json
 
 if not os.path.exists('request'):
     os.makedirs('request')
@@ -22,12 +23,26 @@ miss_count = 0
 total_requests = 0
 id_access_count = defaultdict(int)
 
+# Estadísticas por ID
+id_stats = defaultdict(lambda: {
+    "requests": 0,
+    "hits": 0,
+    "misses": 0,
+    "total_time": 0.0
+})
+
 # URLs del backend
 BACKEND_URL = "http://redis-cache:5000/alerts"
 ALL_IDS_URL = "http://redis-cache:5000/alerts/ids"
 
 # Condicional para cambiar la distribución
-CONDITIONAL_DISTRIBUTION = 0
+CONDITIONAL_DISTRIBUTION = 1  # 1 para uniforme, 0 para exponencial
+
+# Control de la escala de la distribución exponencial
+scale_min = 0.2  # Escala mínima
+scale_max = 5.0  # Escala máxima
+scale_increment = 0.3  # Incremento de la escala por ciclo
+current_scale = scale_min  # Escala inicial
 
 def fetch_random_ids(sample_size=100):
     try:
@@ -43,30 +58,18 @@ def fetch_random_ids(sample_size=100):
         return []
 
 def generate_requests_plan(selected_ids, min_repeats=1, max_repeats=3, target_length=60, num_frequent_ids=10):
-    """
-    Genera un plan de peticiones donde algunos IDs se repiten más que otros.
-    :param selected_ids: lista de IDs seleccionados
-    :param min_repeats: número mínimo de repeticiones para IDs comunes
-    :param max_repeats: número máximo de repeticiones para IDs comunes
-    :param target_length: tamaño del plan de peticiones
-    :param num_frequent_ids: cuántos IDs deben considerarse "frecuentes"
-    :return: lista de IDs para peticiones
-    """
     requests_plan = []
 
-    # Elegimos algunos IDs como "frecuentes"
     frequent_ids = random.sample(selected_ids, num_frequent_ids)
     non_frequent_ids = list(set(selected_ids) - set(frequent_ids))
 
     while len(requests_plan) < target_length:
-        # IDs frecuentes: se repiten más
         for _id in frequent_ids:
             repeats = random.randint(2, max_repeats)
             requests_plan.extend([_id] * repeats)
             if len(requests_plan) >= target_length:
                 break
 
-        # IDs no frecuentes: se agregan solo una vez o pocas veces
         for _id in random.sample(non_frequent_ids, min(len(non_frequent_ids), 10)):
             repeats = random.randint(1, 2)
             requests_plan.extend([_id] * repeats)
@@ -76,30 +79,34 @@ def generate_requests_plan(selected_ids, min_repeats=1, max_repeats=3, target_le
     random.shuffle(requests_plan)
     return requests_plan[:target_length]
 
-
 def main():
-    global hit_count, miss_count, total_requests
+    global hit_count, miss_count, total_requests, current_scale
 
-    # Obtener 100 IDs aleatorios
     selected_ids = fetch_random_ids(1000)
     if not selected_ids:
         print("No se pudieron obtener los IDs.")
         return
     print(f"✅ IDs seleccionados: {selected_ids}")
 
-    # Bucle indefinido con generación de nuevos planes
+    cycle_count = 0  # Contador de ciclos
+
     while True:
         requests_plan = generate_requests_plan(selected_ids, min_repeats=1, max_repeats=3, target_length=60)
+        
         if CONDITIONAL_DISTRIBUTION == 1:
-        # Generar el tiempo de espera usando distribución uniforme
             for _id in requests_plan:
                 id_access_count[_id] += 1
                 total_requests += 1
-
                 params = {"id": _id}
 
+                start_time = time.time()
                 try:
                     response = requests.get(BACKEND_URL, params=params)
+                    elapsed_time = time.time() - start_time
+
+                    id_stats[_id]["requests"] += 1
+                    id_stats[_id]["total_time"] += elapsed_time
+
                     if response.status_code == 200:
                         result = response.json()
                         source = result.get("source", "unknown")
@@ -107,10 +114,12 @@ def main():
 
                         if source == "cache":
                             hit_count += 1
-                            log = f"[CACHE HIT] id={_id} at {current_time}"
+                            id_stats[_id]["hits"] += 1
+                            log = f"[CACHE HIT] id={_id} at {current_time} | Time: {elapsed_time:.3f}s"
                         else:
                             miss_count += 1
-                            log = f"[CACHE MISS] id={_id} at {current_time}"
+                            id_stats[_id]["misses"] += 1
+                            log = f"[CACHE MISS] id={_id} at {current_time} | Time: {elapsed_time:.3f}s"
 
                         print(log)
                         logging.info(log)
@@ -126,19 +135,22 @@ def main():
                 except Exception as e:
                     logging.error(f"💥 Exception during request: {e}")
 
-                # Tiempo de espera usando distribución uniforme entre 0.1 y 1 segundo
-                wait_time = random.uniform(0.1, 1)  # Genera un tiempo de espera entre 0.1 y 1 segundo
-                time.sleep(wait_time)  # Sleep en segundos
+                wait_time = random.uniform(0.1, 1)
+                time.sleep(wait_time)
         else:
-            # Generar el tiempo de espera usando distribución exponencial (media = 0.5s)
             for _id in requests_plan:
                 id_access_count[_id] += 1
                 total_requests += 1
-
                 params = {"id": _id}
 
+                start_time = time.time()
                 try:
                     response = requests.get(BACKEND_URL, params=params)
+                    elapsed_time = time.time() - start_time
+
+                    id_stats[_id]["requests"] += 1
+                    id_stats[_id]["total_time"] += elapsed_time
+
                     if response.status_code == 200:
                         result = response.json()
                         source = result.get("source", "unknown")
@@ -146,10 +158,12 @@ def main():
 
                         if source == "cache":
                             hit_count += 1
-                            log = f"[CACHE HIT] id={_id} at {current_time}"
+                            id_stats[_id]["hits"] += 1
+                            log = f"[CACHE HIT] id={_id} at {current_time} | Time: {elapsed_time:.3f}s"
                         else:
                             miss_count += 1
-                            log = f"[CACHE MISS] id={_id} at {current_time}"
+                            id_stats[_id]["misses"] += 1
+                            log = f"[CACHE MISS] id={_id} at {current_time} | Time: {elapsed_time:.3f}s"
 
                         print(log)
                         logging.info(log)
@@ -165,16 +179,20 @@ def main():
                 except Exception as e:
                     logging.error(f"💥 Exception during request: {e}")
 
-                # Tiempo de espera usando distribución exponencial (media = 0.5s)
-                wait_time = np.random.exponential(scale=2.0)
+                # Aplicar la escala exponencial ajustada
+                wait_time = np.random.exponential(scale=current_scale)
                 time.sleep(wait_time)
 
+        # Actualizar la escala después de un ciclo
+        cycle_count += 1
+        if cycle_count % 10 == 0:  # Cada 10 ciclos, incrementar la escala
+            current_scale = min(current_scale + scale_increment, scale_max)
 
-        # Al finalizar el plan, mostrar resumen y continuar
+        with open("request/id_stats.json", "w") as f:
+            json.dump(id_stats, f, indent=4)
+
         print("\n🔄 Generando nuevo ciclo de peticiones...\n")
         logging.info("🔄 Generando nuevo ciclo de peticiones...")
-
-        # Puedes agregar un pequeño delay si quieres entre ciclos
         time.sleep(2)
 
 if __name__ == "__main__":
