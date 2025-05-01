@@ -28,4 +28,5 @@ Dentro del docker-compose.yml se encuentran todos los contenedores y asociacione
 
 3. A medida que avanzan las peticiones se mostrará por consola todo el procedimiento, las métricas se visualizan una vez que finaliza un ciclo. Solo debe esperar a que aparezcan en la terminal para poder visualizar las métricas asociadas a la cantidad de peticiones, hit rate, miss rate, y el porcentaje de este.
 
-4. También, si se quiere, puede ver la base de datos en mongo llamada **waze_db** en http://localhost:8081.
+4. También, si se quiere, puede ver la base de datos en mongo express llamada **waze_db** en http://localhost:8081.
+5. Cabe recalcar, que si se quiere realizar otra prueba, es recommendable antes borrar la base de datos en mongo express, para evitar errores del tráfico.
