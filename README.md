@@ -1,28 +1,29 @@
 # Tarea-1-Sistemas-Distribuidos
 
-Este proyecto está organizado en dos carpetas principales:
+## Aaron Pozas Oyarce - Diego Pérez Carrasco
 
-1. **Scraper**: Contiene un script que realiza scraping de datos desde Waze. Este script extrae información relevante y genera un archivo de salida llamado `alertas.json`, que contiene las alertas recopiladas.
+Este proyecto está organizado en carpetas principales:
 
-2. **Servidor**: Incluye un servidor que consume el archivo `alertas.json` generado por el scraper y lo utiliza para procesar o mostrar los datos.
+1. **map-scraper**: Contiene un script que realiza scraping de datos desde Waze. Este script extrae información relevante y genera un archivo de salida llamado `alertas.json`, que contiene las alertas recopiladas luego las sube al servidor mongo.
 
-Además, el proyecto incluye un archivo `docker-compose.yml` que configura y levanta un contenedor con **mongo-express**, una herramienta para visualizar y gestionar los datos almacenados en MongoDB. Esto permite inspeccionar fácilmente los datos procesados por el servidor.
+2. **bdd**: Incluye un servidor que consume el archivo `alertas.json` generado por el scraper y lo utiliza para procesar o mostrar los datos.
 
-## Instrucciones para inicializar el entorno
+3. **redis-cache**: Carpeta que contiene en su interior todo lo relacionado al backend del proyecto así como tambien lo relacionado a la inserción de datos en el cache.
 
-1. Para levantar los servicios definidos en el archivo `docker-compose.yml`, ejecuta el siguiente comando en la terminal desde la raíz del proyecto:
+4. **request**: Carpeta relacionada al generador de tráfico, en ella se encuentra las dos distribuciones (1 = uniforme, 0 = exponencial). Para probar las distintas distribuciones se debe cambiar de forma manual dentro del código.
+
+Además, el proyecto incluye un archivo `docker-compose.yml` que configura y levanta los contenedores. Solo es necesario el comando de más abajo para levantar el proyecto, si se requiere cambiar la política de remoción o el tamaño del cache es necesario cambiarlo en el mismo docker-compose.yml en el contenedor correspondiente a redis.
+
+Dentro del docker-compose.yml se encuentran todos los contenedores y asociaciones a los dockerfile correspondientes.
+
+## Instrucciones para inicializar el proyecto
+
+1. Para levantar los contenedores definidos en el archivo `docker-compose.yml`:
 
    ```bash
    docker-compose up --build
    ```
 
-2. Una vez que los servicios estén levantados, puedes acceder a **mongo-express** desde tu navegador en la siguiente URL:
+2. Una vez arriba los contenedores todo comenzará de forma automática, si se observa algún error 404 - 500 en la primera inicialización se debe esperar a que el scrapper termine de scrapear los 10.000 datos (aprox 1 minuto), posterior a esto se cargarán en la base de datos y el generador de tráfico podrá empezar las request dando como resultado peticiónes 200.
 
-   ```
-   http://localhost:8081
-   ```
-
-   Las credenciales predeterminadas para iniciar sesión son:
-
-   - **Usuario**: `admin`
-   - **Contraseña**: `pass`
+3. A medida que avanzan las peticiones se mostrará por consola todo el procedimiento, las métricas se visualizan una vez que finaliza un ciclo. Solo debe esperar a que aparezcan en la terminal para poder visualizar las métricas asociadas a la cantidad de peticiones, hit rate, miss rate, y el porcentaje de este.

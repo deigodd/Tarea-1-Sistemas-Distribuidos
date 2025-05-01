@@ -1,4 +1,4 @@
-// bdd/init.js
+// Init de la base de datos
 const fs = require("fs");
 
 const rawData = fs.readFileSync("/data/map-scraper/alertas.json");
