@@ -36,7 +36,7 @@ BACKEND_URL = "http://redis-cache:5000/alerts"
 ALL_IDS_URL = "http://redis-cache:5000/alerts/ids"
 
 # Condicional para cambiar la distribución
-CONDITIONAL_DISTRIBUTION = 1  # 1 para uniforme, 0 para exponencial
+CONDITIONAL_DISTRIBUTION = 0  # 1 para uniforme, 0 para exponencial
 
 # Control de la escala de la distribución exponencial
 scale_min = 0.2  # Escala mínima

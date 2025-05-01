@@ -54,7 +54,7 @@ services:
     container_name: redis_waze
     environment:
       - ALLOW_EMPTY_PASSWORD=yes
-      - REDIS_EXTRA_FLAGS=--maxmemory 10mb --maxmemory-policy allkeys-random # Configuración de Redis para limitar el uso de memoria
+      - REDIS_EXTRA_FLAGS=--maxmemory 2mb --maxmemory-policy allkeys-random # Configuración de Redis para limitar el uso de memoria
     ports:
       - "6379:6379"
     volumes:
