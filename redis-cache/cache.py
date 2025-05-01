@@ -10,6 +10,7 @@ app = Flask(__name__)
 # Redis config
 redis_client = redis.Redis(host='redis', port=6379, decode_responses=True)
 
+# texto para ocupar más espacio en el cache, asi se llena más rapido
 large_text = "x" * 50_000
 
 
@@ -25,6 +26,7 @@ except Exception as e:
 db = mongo_client['waze_db']
 collection = db['alertas']
 
+# endpoint principal para obtener alertas y cachear en redis
 @app.route('/alerts', methods=['GET'])
 def get_alerts():
     alert_id = request.args.get('id')
@@ -49,7 +51,7 @@ def get_alerts():
 
     return jsonify({"error": "Debe proporcionar 'id'"}), 400
 
-
+# endpoint para obtener todas los ids para luego en el generador de requests elegir aleatoriamente
 @app.route('/alerts/ids', methods=['GET'])
 def get_all_ids():
     ids = collection.find({}, {"_id": 1}).limit(10000)

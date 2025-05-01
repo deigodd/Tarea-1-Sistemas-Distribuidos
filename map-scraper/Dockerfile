@@ -1,6 +1,6 @@
 FROM python:3.9-slim
 
-# Instalación de dependencias del sistema
+# dependencias para el scraper
 RUN apt-get update && apt-get install -y \
     chromium-driver \
     chromium \
@@ -22,18 +22,14 @@ RUN apt-get update && apt-get install -y \
     xdg-utils \
     && rm -rf /var/lib/apt/lists/*
 
-# Variables de entorno necesarias para headless
 ENV CHROME_BIN="/usr/bin/chromium"
 ENV CHROMEDRIVER_PATH="/usr/bin/chromedriver"
 
-# Copiar archivos
 WORKDIR /app
 COPY requirements.txt .   
 COPY scraper.py .
 
-# Instalar dependencias de Python
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Ejecutar el scraper
 CMD ["python", "scraper.py"]
 

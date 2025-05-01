@@ -8,12 +8,11 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from pymongo import MongoClient
 
-# Detectar si se puede usar pyautogui (entorno gráfico)
 USE_PYAUTOGUI = os.environ.get("DISPLAY") is not None
 if USE_PYAUTOGUI:
     import pyautogui
 
-# Configuración
+# Configuración para el scraper, url y demás
 URL = "https://www.waze.com/es-419/live-map/"
 CHROMEDRIVER_PATH = "/usr/bin/chromedriver"
 PIXELS_PER_MOVE = 300
@@ -25,7 +24,7 @@ DIRECCIONES = {
     "izquierda": (-PIXELS_PER_MOVE, 0),
     "derecha": (PIXELS_PER_MOVE, 0),
 }
-
+# aca se analiza el mapa y se buscan las alertas desde el network
 def analizar_red(driver, alertas):
     print("📡 Analizando solicitudes de red...")
     for request in driver.requests:
@@ -109,6 +108,7 @@ def main():
 
     driver.quit()
 
+    # Guardar alertas en MongoDB -> container mongo
     if alertas:
         try:
             print("💾 Conectando a MongoDB...")

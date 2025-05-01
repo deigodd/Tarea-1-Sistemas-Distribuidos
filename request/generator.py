@@ -11,7 +11,6 @@ import json
 if not os.path.exists('request'):
     os.makedirs('request')
 
-# Configuración de logs
 logging.basicConfig(
     filename='request/request_wazer_logs.txt',
     level=logging.INFO,
@@ -23,7 +22,7 @@ miss_count = 0
 total_requests = 0
 id_access_count = defaultdict(int)
 
-# Estadísticas por ID
+# Estadísticas por ID -> con esto despúes generamos lo gráficos 
 id_stats = defaultdict(lambda: {
     "requests": 0,
     "hits": 0,
@@ -44,6 +43,7 @@ scale_max = 5.0  # Escala máxima
 scale_increment = 0.3  # Incremento de la escala por ciclo
 current_scale = scale_min  # Escala inicial
 
+# se hace el fetch al endpoint de ids y se eligen aleatoriamente 1000 ids
 def fetch_random_ids(sample_size=100):
     try:
         response = requests.get(ALL_IDS_URL)
@@ -57,6 +57,7 @@ def fetch_random_ids(sample_size=100):
         logging.error(f"💥 Exception fetching IDs: {e}")
         return []
 
+# aca se genera el plan de requests, se eligen aleatoriamente x ids frecuentes y x no frecuentes
 def generate_requests_plan(selected_ids, min_repeats=1, max_repeats=3, target_length=60, num_frequent_ids=10):
     requests_plan = []
 
@@ -92,7 +93,7 @@ def main():
 
     while True:
         requests_plan = generate_requests_plan(selected_ids, min_repeats=1, max_repeats=3, target_length=60)
-        
+        # si el condicional es 1, se elige la distribución uniforme, si no, se elige la exponencial
         if CONDITIONAL_DISTRIBUTION == 1:
             for _id in requests_plan:
                 id_access_count[_id] += 1
@@ -179,13 +180,11 @@ def main():
                 except Exception as e:
                     logging.error(f"💥 Exception during request: {e}")
 
-                # Aplicar la escala exponencial ajustada
                 wait_time = np.random.exponential(scale=current_scale)
                 time.sleep(wait_time)
 
-        # Actualizar la escala después de un ciclo
         cycle_count += 1
-        if cycle_count % 10 == 0:  # Cada 10 ciclos, incrementar la escala
+        if cycle_count % 10 == 0:  
             current_scale = min(current_scale + scale_increment, scale_max)
 
         with open("request/id_stats.json", "w") as f:
